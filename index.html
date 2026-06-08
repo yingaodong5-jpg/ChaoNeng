@@ -607,6 +607,41 @@
     translate: -50% 0;
   }
 
+  /* === 顶部大标题 === */
+  .scene3-top-banner {
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 20;
+    pointer-events: none;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .scene3-top-banner.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .scene3-top-banner .banner-text {
+    font-size: clamp(18px, 5vw, 26px);
+    font-weight: 700;
+    color: #5C8A3C;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 8px rgba(92,138,60,0.15);
+    white-space: nowrap;
+  }
+  .scene3-top-banner .banner-sub {
+    display: block;
+    font-size: clamp(11px, 3vw, 14px);
+    font-weight: 400;
+    color: #A8C898;
+    letter-spacing: 1px;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
   /* 点击提示 */
   .tap-hint {
     position: absolute;
@@ -692,6 +727,12 @@
 <!-- ============ 第三幕: 干净自信 + 花香可视化 ============ -->
 <div class="scene scene3" id="scene3">
   <div class="stage" id="stage3">
+    <!-- 顶部大标题 -->
+    <div class="scene3-top-banner" id="topBanner">
+      <span class="banner-text">洗衣液就用超能植愈！</span>
+      <span class="banner-sub">自然植愈力，让衣物焕然一新</span>
+    </div>
+
     <!-- 暖光光环 -->
     <div class="glow-ring" id="glowRing"></div>
 
@@ -1305,6 +1346,7 @@
   const stage3         = document.getElementById('stage3');
   const cleanDisplay   = document.getElementById('cleanDisplay');
   const glowRing       = document.getElementById('glowRing');
+  const topBanner      = document.getElementById('topBanner');
   const bubble3        = document.getElementById('bubble3');
   const tapHint        = document.getElementById('tapHint');
   const flowerContainer = document.getElementById('flowerContainer');
@@ -1313,13 +1355,23 @@
   let bubble3Timer = null;
   let glowVisible = false;
 
-  // 花朵类型配置
+  // 花朵类型配置 — 15种不同花型
   const flowerTypes = [
-    { petals: 5, color: 'var(--fp-cherry, #F2A5B5)', grad: 'var(--fp-cherry-g, #F9CED8)', center: '#FFF5EE' },
-    { petals: 6, color: 'var(--fp-lav, #C4A5DF)',   grad: 'var(--fp-lav-g, #DDC8F0)',   center: '#FFFAF0' },
-    { petals: 5, color: 'var(--fp-peach, #FFB8A0)', grad: 'var(--fp-peach-g, #FFD4C4)', center: '#FFFEF9' },
-    { petals: 8, color: 'var(--fp-daisy, #FEFEFE)', grad: 'var(--fp-daisy-g, #FFF5F0)', center: '#FFE4B5' },
-    { petals: 7, color: 'var(--fp-rose, #F2B5C5)', grad: 'var(--fp-rose-g, #F9D0DA)',   center: '#FFF0F5' },
+    { petals: 5, color: '#F2A5B5', grad: '#F9CED8', center: '#FFF5EE', shape: '50%' },           // 樱花
+    { petals: 6, color: '#C4A5DF', grad: '#DDC8F0', center: '#FFFAF0', shape: '50%' },           // 薰衣草
+    { petals: 5, color: '#FFB8A0', grad: '#FFD4C4', center: '#FFFEF9', shape: '50%' },           // 蜜桃
+    { petals: 8, color: '#FEFEFE', grad: '#FFF5F0', center: '#FFE4B5', shape: '50%' },           // 雏菊
+    { petals: 7, color: '#F2B5C5', grad: '#F9D0DA', center: '#FFF0F5', shape: '50%' },           // 玫瑰
+    { petals: 12,color: '#FFD166', grad: '#FFE8A1', center: '#D4A017', shape: '50% 50% 50% 0' },// 向日葵
+    { petals: 5, color: '#7EC8E3', grad: '#B3E0F2', center: '#FFFEF9', shape: '50% 50% 50% 0' },// 蓝铃花
+    { petals: 6, color: '#FF6B6B', grad: '#FFA5A5', center: '#FFF5EE', shape: '50%' },           // 珊瑚
+    { petals: 5, color: '#E8A0BF', grad: '#F2C9DD', center: '#FFF0F5', shape: '50%' },           // 兰花
+    { petals: 4, color: '#FF5E3A', grad: '#FF9A7C', center: '#333',    shape: '50%' },           // 虞美人
+    { petals: 10,color: '#A8C4E0', grad: '#CDE0F5', center: '#FFF8F0', shape: '50% 50% 50% 0' },// 绣球
+    { petals: 8, color: '#FF9F43', grad: '#FFC48C', center: '#8B4513', shape: '50% 50% 50% 0' },// 万寿菊
+    { petals: 5, color: '#D6336C', grad: '#F06595', center: '#FFF0F5', shape: '50%' },           // 梅花
+    { petals: 5, color: '#A8E6CF', grad: '#D4F5E6', center: '#FFFEF9', shape: '50% 50% 50% 0' },// 薄荷
+    { petals: 8, color: '#F8C8DC', grad: '#FDE2EC', center: '#FFF0F5', shape: '50%' },           // 波斯菊
   ];
 
   function createFlower(container, cx, cy) {
@@ -1349,6 +1401,7 @@
       petal.style.marginTop = -petalH + 'px';
       petal.style.transformOrigin = halfW + 'px ' + petalH + 'px';
       petal.style.transform = 'rotate(' + angle + 'deg)';
+      petal.style.borderRadius = type.shape || '50%';
       petal.style.background = 'radial-gradient(ellipse at 35% 25%, ' + type.color + ', ' + type.grad + ' 85%)';
       petal.style.opacity = (0.75 + Math.random() * 0.2);
       flower.appendChild(petal);
@@ -1371,6 +1424,11 @@
 
   // 场景进入时显示光环和对话
   function initScene3() {
+    // 顶部大标题渐显
+    setTimeout(() => {
+      topBanner.classList.add('visible');
+    }, 200);
+
     // 光环渐显
     setTimeout(() => {
       glowRing.classList.add('visible');
@@ -1425,8 +1483,8 @@
       setTimeout(() => wave.remove(), 1800);
     }
 
-    // 优雅CSS花朵向外散发 (12-16朵)
-    const flowerCount = 12 + Math.floor(Math.random() * 5);
+    // 优雅CSS花朵向外散发 (22-28朵)
+    const flowerCount = 22 + Math.floor(Math.random() * 7);
     for (let i = 0; i < flowerCount; i++) {
       const angle = (Math.PI * 2 * i) / flowerCount + (Math.random() - 0.5) * 0.25;
       const distance = 50 + Math.random() * 120;
