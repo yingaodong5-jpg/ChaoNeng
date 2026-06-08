@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>脏衣服</title>
+<style>
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    background: #ffffff;
+  }
+
+  body {
+    width: 100%;
+    min-height: 100%;
+    background: #ffffff;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* =====================================================
+     场景容器
+  ===================================================== */
+  .scene {
+    scroll-snap-align: start;
+    width: 100%;
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* === 1:1 正方形舞台 === */
+  .stage {
+    position: relative;
+    --size: min(100vw, calc(var(--vh, 1vh) * 100), 100vh, 100dvh, 540px);
+    width: var(--size);
+    height: var(--size);
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+
+  /* =====================================================
+     场景一: 脏衣服角色旋转互动
+  ===================================================== */
+
+  .character {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+  }
+  .character:active { cursor: grabbing; }
+  .character.dragging { cursor: grabbing; }
+
+  .char-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 82%;
+    height: 82%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    filter: saturate(0.85) brightness(1.02);
+    will-change: opacity;
+  }
+  .char-img.active { opacity: 1; }
+
+  /* === 对话框 === */
+  .bubble {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.35s cubic-bezier(0.34,1.56,0.64,1),
+                transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 50;
+    top: 8%;
+    left: 50%;
+    translate: -50% 0;
+  }
+  .bubble.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .bubble-inner {
+    background: #FFF8EC;
+    border: 2.5px solid #5C4B3A;
+    border-radius: 20px;
+    padding: 12px 22px;
+    position: relative;
+    white-space: nowrap;
+    box-shadow: 0 2px 12px rgba(92,75,58,0.08);
+  }
+  .bubble-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #5C4B3A;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .bubble-arrow {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    translate: -50% 0;
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 9px solid #FFF8EC;
+    filter: drop-shadow(0 2px 1px rgba(92,75,58,0.06));
+  }
+
+  /* === 回应气泡 (超能植愈) === */
+  .reply-bubble {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 15;
+    transform: scale(0.7) translateY(8px);
+    transition: opacity 0.4s cubic-bezier(0.34,1.56,0.64,1),
+                transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .reply-bubble.show {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  .reply-bubble-inner {
+    background: linear-gradient(135deg, #E8F8EC 0%, #D4F0DA 100%);
+    border: 2px solid #4A9B5F;
+    border-radius: 16px;
+    padding: 8px 14px;
+    position: relative;
+    white-space: nowrap;
+    box-shadow: 0 3px 12px rgba(74,155,95,0.18);
+  }
+  .reply-bubble-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2D7A42;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    text-align: center;
+  }
+  /* 左侧小箭头 (指向衣服) */
+  .reply-bubble-arrow {
+    position: absolute;
+    left: -9px;
+    top: 50%;
+    translate: 0 -50%;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 9px solid #E8F8EC;
+    filter: drop-shadow(-1px 0 1px rgba(74,155,95,0.08));
+  }
+
+  /* === 情绪粒子 === */
+  .emotion-particle {
+    position: absolute;
+    pointer-events: none;
+    font-size: 18px;
+    opacity: 0;
+    z-index: 19;
+  }
+  .emotion-particle.fly {
+    animation: emotionFly 1.8s ease-out forwards;
+  }
+  @keyframes emotionFly {
+    0%   { opacity: 1; transform: translate(0,0) scale(0.6); }
+    30%  { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(1); }
+    100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) - 30px)) scale(0.3); }
+  }
+
+  /* =====================================================
+     场景二: 浴缸泡澡互动
+  ===================================================== */
+
+  .scene2 .stage {
+    overflow: hidden;
+  }
+
+  /* 浴缸画布: 脏 → 干净 → 白, 叠加交叉淡入 */
+  .bathtub-layer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    will-change: opacity;
+  }
+  .bathtub-layer.visible {
+    opacity: 1;
+  }
+  .bathtub-layer.initial {
+    opacity: 1;
+    animation: bathtubFadeIn 0.8s ease-out forwards;
+    z-index: 2;
+  }
+  @keyframes bathtubFadeIn {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  /* === 开心星星粒子 === */
+  .sparkle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 8;
+    font-size: 16px;
+    opacity: 0;
+  }
+  .sparkle.pop {
+    animation: sparklePop 1.2s ease-out forwards;
+  }
+  @keyframes sparklePop {
+    0%   { opacity: 0; transform: translate(0,0) scale(0); }
+    30%  { opacity: 1; transform: translate(var(--sx), var(--sy)) scale(1.2); }
+    100% { opacity: 0; transform: translate(var(--sx), calc(var(--sy) - 20px)) scale(0.3); }
+  }
+
+  /* 花洒触发器区域 */
+  .shower-area {
+    position: absolute;
+    z-index: 10;
+    cursor: pointer;
+    top: 5%;
+    left: 50%;
+    translate: -50% 0;
+    width: 18%;
+    height: 16%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* 花洒图标 */
+  .shower-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255,250,245,0.3);
+    border: 2px dashed rgba(180,170,155,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    animation: showerPulse 2s ease-in-out infinite;
+    transition: all 0.3s ease;
+  }
+  .shower-area.active .shower-icon {
+    background: rgba(255,250,245,0.55);
+    border-color: rgba(200,190,175,0.6);
+    box-shadow: 0 0 20px rgba(255,250,240,0.5);
+    animation: showerSpin 0.6s linear infinite;
+  }
+  /* 提示文字 */
+  .shower-hint {
+    position: absolute;
+    top: calc(5% + 16% + 2px);
+    left: 50%;
+    translate: -50% 0;
+    width: 18%;
+    text-align: center;
+    font-size: 11px;
+    color: #B8A898;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.4s ease;
+  }
+  .shower-area.active + .shower-hint,
+  .shower-area.active ~ .shower-hint {
+    opacity: 0;
+  }
+
+  @keyframes showerPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+  @keyframes showerSpin {
+    0%   { transform: rotate(0deg) scale(1.05); }
+    50%  { transform: rotate(10deg) scale(1.05); }
+    100% { transform: rotate(0deg) scale(1.05); }
+  }
+
+  /* === 乳白色洗衣液水滴 (撒花效果) === */
+  .water-drop {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.85), rgba(245,240,235,0.55) 50%, rgba(235,225,215,0.2));
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 6px rgba(255,255,255,0.4);
+  }
+  .water-drop.fall {
+    animation: waterFall var(--fall-duration, 1.4s) ease-in-out forwards;
+    animation-delay: var(--fall-delay, 0s);
+  }
+  @keyframes waterFall {
+    0%   { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.5); }
+    15%  { opacity: 0.9; }
+    25%  { transform: translate(calc(var(--drift, 15px) * 0.5), calc(var(--fall-dist, 180px) * 0.25)) rotate(30deg) scale(1); }
+    50%  { transform: translate(calc(var(--drift, 15px) * -0.3), calc(var(--fall-dist, 180px) * 0.5)) rotate(-20deg) scale(0.95); }
+    75%  { transform: translate(calc(var(--drift, 15px) * 0.7), calc(var(--fall-dist, 180px) * 0.75)) rotate(15deg) scale(0.85); }
+    90%  { opacity: 0.5; }
+    100% { opacity: 0; transform: translate(var(--drift, 15px), var(--fall-dist, 180px)) rotate(0deg) scale(0.5); }
+  }
+
+  /* === 超能洗衣液倾倒 === */
+  .detergent-bottle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 6;
+    font-size: 32px;
+    opacity: 0;
+    transform: rotate(-15deg);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    top: 10%;
+    left: 50%;
+    translate: 30px 0;
+  }
+  .detergent-bottle.pour {
+    opacity: 1;
+    transform: rotate(-55deg);
+  }
+
+  /* 洗衣液乳白液体流 */
+  .detergent-stream {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    width: 6px;
+    height: 0;
+    background: linear-gradient(180deg, rgba(255,250,245,0.85), rgba(245,238,228,0.5), transparent);
+    border-radius: 3px;
+    opacity: 0;
+    transition: none;
+    top: calc(10% + 28px);
+    left: calc(50% + 38px);
+    box-shadow: 0 0 8px rgba(255,255,255,0.4);
+  }
+  .detergent-stream.flow {
+    animation: detergentFlow 1.2s ease-in forwards;
+  }
+  @keyframes detergentFlow {
+    0%   { height: 0; opacity: 0; }
+    20%  { height: 20px; opacity: 0.85; }
+    80%  { height: var(--stream-h, 100px); opacity: 0.6; }
+    100% { height: var(--stream-h, 140px); opacity: 0; }
+  }
+
+  /* === 泡泡 === */
+  .bubble-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 4;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), rgba(245,238,228,0.3) 60%, rgba(225,215,200,0.12));
+    border: 1px solid rgba(220,210,195,0.35);
+    opacity: 0;
+  }
+  .bubble-particle.float {
+    animation: bubbleFloat var(--bubble-dur, 2.5s) ease-out forwards;
+    animation-delay: var(--bubble-delay, 0s);
+  }
+  @keyframes bubbleFloat {
+    0%   { opacity: 0; transform: translate(0, 0) scale(0.3); }
+    20%  { opacity: 0.9; }
+    60%  { opacity: 0.6; }
+    100% { opacity: 0; transform: translate(var(--bubble-drift, -20px), var(--bubble-rise, -120px)) scale(1.4); }
+  }
+
+  /* === 场景二对话框 === */
+  .bubble2 {
+    z-index: 21;
+    top: auto;
+    bottom: 8%;
+    left: 50%;
+    translate: -50% 0;
+  }
+
+  /* === 向下滚动提示箭头 === */
+  .scroll-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    opacity: 0.5;
+    animation: scrollHintBounce 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .scroll-hint span {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #C0C0C0;
+    border-bottom: 2px solid #C0C0C0;
+    transform: rotate(45deg);
+  }
+  @keyframes scrollHintBounce {
+    0%, 100% { transform: translate(-50%, 0); opacity: 0.3; }
+    50%      { transform: translate(-50%, 6px); opacity: 0.7; }
+  }
+
+  /* === 场景过渡遮罩 === */
+  .transition-hint {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  /* =====================================================
+     场景三: 干净自信 + 花香可视化
+  ===================================================== */
+
+  .scene3 .stage {
+    overflow: hidden;
+  }
+
+  /* 干净衣服展示容器 */
+  .clean-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .clean-char-img {
+    width: 80%;
+    height: 80%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    animation: cleanBreathe 3s ease-in-out infinite;
+  }
+
+  @keyframes cleanBreathe {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.03); }
+  }
+
+  /* 光环效果 */
+  .glow-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    background: radial-gradient(circle, rgba(255,220,180,0.15) 0%, rgba(255,200,160,0.06) 40%, transparent 70%);
+    transition: opacity 0.8s ease;
+  }
+  .glow-ring.visible {
+    opacity: 1;
+    animation: glowPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes glowPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+    50%      { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+  }
+
+  /* 花香粒子 (花朵) */
+  .flower-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    width: 42px;
+    height: 42px;
+    opacity: 0;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));
+  }
+  .flower-particle .petal {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 8px;
+    height: 16px;
+    margin-left: -4px;
+    margin-top: -16px;
+    border-radius: 50%;
+    transform-origin: 4px 16px;
+  }
+  .flower-particle .center-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(0,0,0,0.08);
+  }
+  .flower-particle.bloom {
+    animation: flowerBloom var(--bloom-dur, 2s) cubic-bezier(0.22,0.61,0.36,1) forwards;
+    animation-delay: var(--bloom-delay, 0s);
+  }
+  @keyframes flowerBloom {
+    0%   { opacity: 0; transform: translate(0, 0) scale(0.2) rotate(0deg); }
+    12%  { opacity: 0.7; transform: translate(
+            calc(var(--fx) * 0.15),
+            calc(var(--fy) * 0.15)
+          ) scale(0.55) rotate(calc(var(--fr, 0) * 0.15)); }
+    35%  { opacity: 1; transform: translate(
+            calc(var(--fx) * 0.5),
+            calc(var(--fy) * 0.5)
+          ) scale(1.0) rotate(calc(var(--fr, 0) * 0.5)); }
+    65%  { opacity: 0.7; transform: translate(
+            calc(var(--fx) * 0.85),
+            calc(var(--fy) * 0.85)
+          ) scale(1.08) rotate(calc(var(--fr, 0) * 0.85)); }
+    100% { opacity: 0; transform: translate(var(--fx), calc(var(--fy) - 30px)) scale(0.35) rotate(var(--fr, 0)); }
+  }
+
+  /* 香气波纹 */
+  .scent-wave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: 20%;
+    height: 20%;
+    border-radius: 50%;
+    border: 2px solid rgba(255,180,200,0.5);
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+  }
+  .scent-wave.pulse {
+    animation: scentPulse 1.6s ease-out forwards;
+    animation-delay: var(--sw-delay, 0s);
+  }
+  @keyframes scentPulse {
+    0%   { opacity: 0.8; transform: translate(-50%, -50%) scale(0.3); }
+    100% { opacity: 0;   transform: translate(-50%, -50%) scale(3.5); border-width: 0.5px; }
+  }
+
+  /* 场景三对话框 */
+  .bubble3 {
+    z-index: 21;
+    top: auto;
+    bottom: 10%;
+    left: 50%;
+    translate: -50% 0;
+  }
+
+  /* 点击提示 */
+  .tap-hint {
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 15;
+    font-size: 13px;
+    color: #D4B896;
+    pointer-events: none;
+    letter-spacing: 1px;
+    animation: tapHintFade 2.5s ease-in-out infinite;
+  }
+  @keyframes tapHintFade {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 第一幕: 脏衣服角色 ============ -->
+<div class="scene scene1" id="scene1">
+  <div class="stage" id="stage1">
+    <div class="character" id="character">
+      <img class="char-img active" id="imgFront"  src="images/front.png" alt="正面" draggable="false" loading="eager" decoding="async" width="600" height="600" onerror="this.style.display='none'">
+      <img class="char-img"        id="imgRight"  src="images/right.png" alt="右侧" draggable="false" loading="eager" decoding="async" width="600" height="600" onerror="this.style.display='none'">
+      <img class="char-img"        id="imgBack"   src="images/back.png"  alt="背面" draggable="false" loading="eager" decoding="async" width="600" height="600" onerror="this.style.display='none'">
+      <img class="char-img"        id="imgLeft"   src="images/left.png"  alt="左侧" draggable="false" loading="eager" decoding="async" width="600" height="600" onerror="this.style.display='none'">
+    </div>
+
+    <div class="bubble" id="bubble1">
+      <div class="bubble-inner">
+        <span class="bubble-text">我身上脏脏的怎么办？</span>
+      </div>
+      <div class="bubble-arrow"></div>
+    </div>
+
+    <!-- 向下滚动提示 -->
+    <div class="scroll-hint">
+      <span></span><span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 第二幕: 浴缸泡澡 ============ -->
+<div class="scene scene2" id="scene2">
+  <div class="stage" id="stage2">
+    <!-- 洗衣六幕画布: A→B→C→D→E→F -->
+    <img class="bathtub-layer visible" id="tubA" src="images/A.png" alt="脏衣服A" draggable="false" loading="eager" decoding="async" width="337" height="600" onerror="this.style.display='none'">
+    <img class="bathtub-layer" id="tubB" src="images/B.png" alt="洗衣B" draggable="false" loading="lazy" decoding="async" width="337" height="600" onerror="this.style.display='none'">
+    <img class="bathtub-layer" id="tubC" src="images/C.png" alt="洗衣C" draggable="false" loading="lazy" decoding="async" width="337" height="600" onerror="this.style.display='none'">
+    <img class="bathtub-layer" id="tubD" src="images/D.png" alt="洗衣D" draggable="false" loading="lazy" decoding="async" width="337" height="600" onerror="this.style.display='none'">
+    <img class="bathtub-layer" id="tubE" src="images/E.png" alt="洗衣E" draggable="false" loading="lazy" decoding="async" width="337" height="600" onerror="this.style.display='none'">
+    <img class="bathtub-layer" id="tubF" src="images/F.png" alt="干净衣服F" draggable="false" loading="lazy" decoding="async" width="337" height="600" onerror="this.style.display='none'">
+
+    <!-- 花洒可点击区域 -->
+    <div class="shower-area" id="showerArea">
+      <div class="shower-icon">🚿</div>
+    </div>
+    <div class="shower-hint" id="showerHint">点我打开花洒</div>
+
+    <!-- 洗衣液瓶 -->
+    <div class="detergent-bottle" id="detergentBottle">🧴</div>
+    <div class="detergent-stream" id="detergentStream"></div>
+
+    <!-- 水流粒子容器 -->
+    <div id="waterContainer"></div>
+
+    <!-- 泡泡容器 -->
+    <div id="bubbleContainer"></div>
+
+    <!-- 对话框 -->
+    <div class="bubble bubble2" id="bubble2">
+      <div class="bubble-inner">
+        <span class="bubble-text">暖暖的好舒服呀~ 超能让衣服变干净！</span>
+      </div>
+      <div class="bubble-arrow"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 第三幕: 干净自信 + 花香可视化 ============ -->
+<div class="scene scene3" id="scene3">
+  <div class="stage" id="stage3">
+    <!-- 暖光光环 -->
+    <div class="glow-ring" id="glowRing"></div>
+
+    <!-- 干净自信的衣服 -->
+    <div class="clean-display" id="cleanDisplay">
+      <img class="clean-char-img" id="imgHappy" src="images/happy.png" alt="干净自信" draggable="false" loading="lazy" decoding="async" width="600" height="600" onerror="this.style.display='none'">
+    </div>
+
+    <!-- 点击提示 -->
+    <div class="tap-hint" id="tapHint">👆 点我闻花香</div>
+
+    <!-- 香气波纹容器 -->
+    <div id="scentWaveContainer"></div>
+
+    <!-- 花朵粒子容器 -->
+    <div id="flowerContainer"></div>
+
+    <!-- 对话框 -->
+    <div class="bubble bubble3" id="bubble3">
+      <div class="bubble-inner">
+        <span class="bubble-text">变得干干净净，自信又开心！浑身散发着花香~ 🌸</span>
+      </div>
+      <div class="bubble-arrow"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ============================================================
+     移动端图片预加载 & 重试机制
+  ============================================================ */
+  const allImages = document.querySelectorAll('img[src]');
+  const RETRY_LIMIT = 3;
+  const RETRY_DELAY = 500;
+
+  allImages.forEach(img => {
+    let retries = 0;
+    img.addEventListener('error', function() {
+      if (retries < RETRY_LIMIT) {
+        retries++;
+        const src = img.getAttribute('src');
+        console.warn('图片加载失败，重试 ' + retries + '/' + RETRY_LIMIT + ': ' + src);
+        setTimeout(() => {
+          // 添加随机参数避免缓存
+          img.src = src.split('?')[0] + '?retry=' + Date.now();
+        }, RETRY_DELAY * retries);
+      } else {
+        console.error('图片最终加载失败: ' + img.getAttribute('src'));
+        img.style.display = 'none';
+      }
+    });
+  });
+
+  // iOS Safari 视口高度修复（避免 URL 栏遮挡）
+  function setVH() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', vh + 'px');
+  }
+  setVH();
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', () => setTimeout(setVH, 100));
+
+  /* ============================================================
+     场景一: 脏衣服角色拖动旋转 + 点击对话
+  ============================================================ */
+  const stage1     = document.getElementById('stage1');
+  const character  = document.getElementById('character');
+  const bubble1    = document.getElementById('bubble1');
+  const imgs = {
+    front: document.getElementById('imgFront'),
+    right: document.getElementById('imgRight'),
+    back:  document.getElementById('imgBack'),
+    left:  document.getElementById('imgLeft'),
+  };
+
+  let angle = 0;
+  let velocity = 0;
+  let isDragging = false;
+  let lastX = 0;
+  let dragStartTime = 0;
+  let lastDragDelta = 0;
+  let lastDragTime = 0;
+  let bubble1Timer = null;
+  let animFrame = null;
+  let imgW = 300, imgH = 300;
+  let currentView = 'front';
+
+  // 图片预加载
+  let loadedCount = 0;
+  const totalImages = 4;
+  function onImgLoad() {
+    loadedCount++;
+    if (loadedCount === totalImages) {
+      imgW = imgs.front.naturalWidth  || imgW;
+      imgH = imgs.front.naturalHeight || imgH;
+    }
+  }
+  imgs.front.addEventListener('load', onImgLoad);
+  imgs.right.addEventListener('load', onImgLoad);
+  imgs.back.addEventListener('load',  onImgLoad);
+  imgs.left.addEventListener('load',  onImgLoad);
+  if (imgs.front.complete) onImgLoad();
+  if (imgs.right.complete) onImgLoad();
+  if (imgs.back.complete)  onImgLoad();
+  if (imgs.left.complete)  onImgLoad();
+
+  function angleToImageName(a) {
+    let norm = a % (2 * Math.PI);
+    if (norm < 0) norm += 2 * Math.PI;
+    const offset = norm + Math.PI / 4;
+    const index = Math.floor(offset / (Math.PI / 2)) % 4;
+    const names = ['front', 'right', 'back', 'left'];
+    return names[index];
+  }
+
+  function updateImage() {
+    const view = angleToImageName(angle);
+    if (view === currentView) return;
+    currentView = view;
+    Object.keys(imgs).forEach(k => {
+      imgs[k].classList.toggle('active', k === view);
+    });
+  }
+
+  function animate() {
+    if (!isDragging) {
+      velocity *= 0.94;
+      if (Math.abs(velocity) < 0.0003) velocity = 0;
+      angle += velocity;
+      if (angle > 1000 * Math.PI) angle -= 2000 * Math.PI;
+      if (angle < -1000 * Math.PI) angle += 2000 * Math.PI;
+      updateImage();
+    }
+    if (isDragging || Math.abs(velocity) > 0.0003) {
+      animFrame = requestAnimationFrame(animate);
+    } else {
+      animFrame = null;
+    }
+  }
+
+  function startAnimation() {
+    if (!animFrame) animFrame = requestAnimationFrame(animate);
+  }
+
+  function getClientX(e) {
+    if (e.touches && e.touches.length > 0) return e.touches[0].clientX;
+    if (e.changedTouches && e.changedTouches.length > 0) return e.changedTouches[0].clientX;
+    return e.clientX;
+  }
+
+  function onStart(e) {
+    e.preventDefault();
+    isDragging = true;
+    lastX = getClientX(e);
+    lastDragTime = performance.now();
+    lastDragDelta = 0;
+    dragStartTime = lastDragTime;
+    velocity = 0;
+    character.classList.add('dragging');
+    startAnimation();
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = getClientX(e);
+    const now = performance.now();
+    const delta = x - lastX;
+    lastDragDelta = delta;
+    lastDragTime = now;
+    const stageRect = stage1.getBoundingClientRect();
+    const fullCirclePx = stageRect.width * 1.5;
+    const angleDelta = (delta / fullCirclePx) * 2 * Math.PI;
+    angle += angleDelta;
+    updateImage();
+    lastX = x;
+  }
+
+  function onEnd(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    isDragging = false;
+    character.classList.remove('dragging');
+    const now = performance.now();
+    const dt = now - lastDragTime;
+    if (dt > 0 && dt < 200) {
+      const stageRect = stage1.getBoundingClientRect();
+      const fullCirclePx = stageRect.width * 1.5;
+      velocity = (lastDragDelta / dt) * 16 / fullCirclePx * 2 * Math.PI;
+      const maxSpeed = 0.35;
+      if (velocity > maxSpeed) velocity = maxSpeed;
+      if (velocity < -maxSpeed) velocity = -maxSpeed;
+    } else {
+      velocity = 0;
+    }
+    const totalDragTime = now - dragStartTime;
+    const totalDragDist = Math.abs(getClientX(e) - lastX);
+    if (totalDragTime < 300 && totalDragDist < 10) {
+      showBubble1();
+    }
+    if (Math.abs(velocity) < 0.0005) {
+      velocity = 0;
+    } else {
+      startAnimation();
+    }
+  }
+
+  // 所有累积的回应气泡
+  const spawnedReplies = [];
+  let replyShowTimer = null;
+
+  function showBubble1() {
+    if (bubble1Timer) { clearTimeout(bubble1Timer); bubble1Timer = null; }
+    if (replyShowTimer) { clearTimeout(replyShowTimer); replyShowTimer = null; }
+
+    // 定位主气泡（衣服上方居中，3秒后消失）
+    const stageRect = stage1.getBoundingClientRect();
+    const charImg = imgs[currentView];
+    const imgRect = charImg.getBoundingClientRect();
+    const bubbleTop = imgRect.top - stageRect.top - 60;
+    bubble1.style.top = Math.max(4, bubbleTop) + 'px';
+    bubble1.classList.add('show');
+
+    // 情绪粒子
+    spawnEmotionParticles(stage1, imgs[currentView]);
+
+    // 0.5秒后新增一个永久回应气泡
+    replyShowTimer = setTimeout(() => {
+      spawnPersistentReply();
+    }, 500);
+
+    // 主气泡3秒后消失
+    bubble1Timer = setTimeout(() => {
+      bubble1.classList.remove('show');
+      bubble1Timer = null;
+    }, 3000);
+  }
+  function spawnPersistentReply() {
+    const stageRect = stage1.getBoundingClientRect();
+    const stageW = stageRect.width;
+    const stageH = stageRect.height;
+
+    // 气泡实际尺寸估算：约 "🌿 用超能植愈洗衣液！" 文字宽度
+    const BW = 148, BH = 36;
+    const PAD = 4; // 气泡间最小间距
+
+    // 衣服中心禁区（stage 中间区域，避免遮住角色）
+    const charCX = stageW * 0.5, charCY = stageH * 0.5;
+    const noW = stageW * 0.46, noH = stageH * 0.54;
+    const noL = charCX - noW / 2, noT = charCY - noH / 2;
+    const noR = noL + noW, noB = noT + noH;
+
+    // 收集已占用矩形
+    const occupied = spawnedReplies.map(el => ({
+      l: parseFloat(el.style.left),
+      t: parseFloat(el.style.top),
+      r: parseFloat(el.style.left) + BW,
+      b: parseFloat(el.style.top) + BH,
+    }));
+
+    function rectsOverlap(l1, t1, r1, b1, l2, t2, r2, b2, gap) {
+      return !(r1 + gap <= l2 || r2 + gap <= l1 || b1 + gap <= t2 || b2 + gap <= t1);
+    }
+
+    function isInNoZone(l, t) {
+      // 判断气泡矩形是否与禁区重叠
+      return rectsOverlap(l, t, l + BW, t + BH, noL, noT, noR, noB, 0);
+    }
+
+    function collidesAny(l, t, gap) {
+      return occupied.some(o => rectsOverlap(l, t, l + BW, t + BH, o.l, o.t, o.r, o.b, gap));
+    }
+
+    // 完全随机候选位置（不再用网格，避免排列整齐）
+    function randomCandidates(count) {
+      const arr = [];
+      for (let i = 0; i < count; i++) {
+        arr.push({
+          l: 2 + Math.random() * (stageW - BW - 4),
+          t: 2 + Math.random() * (stageH - BH - 4),
+        });
+      }
+      return arr;
+    }
+
+    let bestPos = null;
+
+    // 第一优先：不在禁区 且 不与已有气泡重叠
+    let candidates = randomCandidates(80);
+    for (const pos of candidates) {
+      if (!isInNoZone(pos.l, pos.t) && !collidesAny(pos.l, pos.t, PAD)) {
+        bestPos = pos;
+        break;
+      }
+    }
+
+    // 第二优先：不在禁区，允许轻微重叠（间距放宽到-4px）
+    if (!bestPos) {
+      candidates = randomCandidates(80);
+      for (const pos of candidates) {
+        if (!isInNoZone(pos.l, pos.t) && !collidesAny(pos.l, pos.t, -4)) {
+          bestPos = pos;
+          break;
+        }
+      }
+    }
+
+    // 第三优先：全屏任意位置，允许完全重叠（确保有地方放）
+    if (!bestPos) {
+      candidates = randomCandidates(80);
+      for (const pos of candidates) {
+        if (!collidesAny(pos.l, pos.t, -BH)) {
+          bestPos = pos;
+          break;
+        }
+      }
+    }
+
+    // 兜底：随机位置（可以重叠）
+    if (!bestPos) {
+      bestPos = {
+        l: 2 + Math.random() * (stageW - BW - 4),
+        t: 2 + Math.random() * (stageH - BH - 4),
+      };
+    }
+
+    // 创建新气泡 DOM
+    const el = document.createElement('div');
+    el.className = 'reply-bubble';
+    el.style.left = bestPos.l + 'px';
+    el.style.top  = bestPos.t + 'px';
+    el.innerHTML = `
+      <div class="reply-bubble-inner">
+        <span class="reply-bubble-text">🌿 用超能植愈洗衣液！</span>
+      </div>
+      <div class="reply-bubble-arrow"></div>
+    `;
+    stage1.appendChild(el);
+    spawnedReplies.push(el);
+
+    // 弹出动画
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => el.classList.add('show'));
+    });
+  }
+
+  function spawnEmotionParticles(stage, charImg) {
+    const particles = ['💧','💧','😢','💦'];
+    particles.forEach((emoji, i) => {
+      const el = document.createElement('div');
+      el.className = 'emotion-particle';
+      el.textContent = emoji;
+      const stageRect = stage.getBoundingClientRect();
+      const imgRect = charImg.getBoundingClientRect();
+      const cx = imgRect.left + imgRect.width / 2 - stageRect.left;
+      const cy = imgRect.top - stageRect.top;
+      const spreadX = (Math.random() - 0.5) * 80;
+      const spreadY = -(20 + Math.random() * 50);
+      el.style.left = (cx + spreadX) + 'px';
+      el.style.top  = (cy + spreadY) + 'px';
+      el.style.setProperty('--dx', ((Math.random()-0.5)*60) + 'px');
+      el.style.setProperty('--dy', (-40-Math.random()*50) + 'px');
+      el.style.animationDelay = (i * 0.1) + 's';
+      stage.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('fly'));
+      setTimeout(() => el.remove(), 2000);
+    });
+  }
+
+  // 绑定场景一事件
+  character.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', (e) => { onMove(e); });
+  window.addEventListener('mouseup', (e) => { onEnd(e); });
+  character.addEventListener('touchstart', onStart, { passive: false });
+  window.addEventListener('touchmove',  (e) => { onMove(e); }, { passive: false });
+  window.addEventListener('touchend',   (e) => { onEnd(e); });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+  document.addEventListener('gestureend', e => e.preventDefault());
+
+  updateImage();
+
+  /* ============================================================
+     场景二: 浴缸泡澡互动
+  ============================================================ */
+
+  const stage2            = document.getElementById('stage2');
+  const showerArea        = document.getElementById('showerArea');
+  const showerHint        = document.getElementById('showerHint');
+  const detergentBottle   = document.getElementById('detergentBottle');
+  const detergentStream   = document.getElementById('detergentStream');
+  const waterContainer    = document.getElementById('waterContainer');
+  const bubbleContainer   = document.getElementById('bubbleContainer');
+  const bubble2           = document.getElementById('bubble2');
+  const tubA = document.getElementById('tubA');
+  const tubB = document.getElementById('tubB');
+  const tubC = document.getElementById('tubC');
+  const tubD = document.getElementById('tubD');
+  const tubE = document.getElementById('tubE');
+  const tubF = document.getElementById('tubF');
+  const tubLayers = [tubA, tubB, tubC, tubD, tubE, tubF];
+
+  let showerOn = false;
+  let waterInterval = null;
+  let bubbleInterval = null;
+  let bubble2Timer = null;
+  let tubTimers = [];       // 6张图的所有定时器
+  let currentTubIndex = 0;  // 0-5 对应 01-06
+
+  function setTubStage(index) {
+    currentTubIndex = index;
+    tubLayers.forEach((layer, i) => {
+      layer.classList.toggle('visible', i === index);
+    });
+    if (index === 5) {
+      spawnSparkles();
+    }
+  }
+
+  // 洒星星粒子
+  function spawnSparkles() {
+    const emojis = ['✨','✨','✨','🌟','💫','✨','🌟','💫','✨','✨'];
+    const stageRect = stage2.getBoundingClientRect();
+    emojis.forEach((emoji, i) => {
+      const el = document.createElement('div');
+      el.className = 'sparkle';
+      el.textContent = emoji;
+      const cx = stageRect.width * (0.3 + Math.random() * 0.4);
+      const cy = stageRect.height * (0.15 + Math.random() * 0.5);
+      el.style.left = cx + 'px';
+      el.style.top = cy + 'px';
+      el.style.fontSize = (14 + Math.random() * 14) + 'px';
+      el.style.setProperty('--sx', ((Math.random() - 0.5) * 50) + 'px');
+      el.style.setProperty('--sy', (-20 - Math.random() * 40) + 'px');
+      el.style.animationDelay = (i * 0.06) + 's';
+      stage2.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('pop'));
+      setTimeout(() => el.remove(), 1400);
+    });
+  }
+
+  // 花洒点击 / 触摸
+  showerArea.addEventListener('click', toggleShower);
+  showerArea.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    toggleShower();
+  });
+
+  function toggleShower() {
+    if (showerOn) {
+      stopShower();
+    } else {
+      startShower();
+    }
+  }
+
+  function startShower() {
+    showerOn = true;
+    showerArea.classList.add('active');
+    showerHint.style.opacity = '0';
+
+    // 清除旧定时器
+    tubTimers.forEach(tid => clearTimeout(tid));
+    tubTimers = [];
+
+    // 洗衣液瓶倾斜
+    detergentBottle.classList.add('pour');
+
+    // 洗衣液液体
+    detergentStream.classList.add('flow');
+    const stageRect = stage2.getBoundingClientRect();
+    const streamH = stageRect.height * 0.4;
+    detergentStream.style.setProperty('--stream-h', streamH + 'px');
+
+    // 水流粒子
+    waterInterval = setInterval(spawnWaterDrops, 80);
+
+    // 泡泡
+    bubbleInterval = setInterval(spawnBubbles, 300);
+
+    // 初始对话
+    setBubbleText('暖暖的好舒服呀~');
+    showBubble2();
+
+    // 依次呈现6张图（时间间隔：1.2→2.5→4→5.5→7.2 秒）
+    const tubDelays  = [1200, 2500, 4000, 5500, 7200];
+    const tubDialogues = [null, null, '哇，衣服变干净了！', null, '白白净净的！超能真厉害✨'];
+
+    tubDelays.forEach((delay, i) => {
+      const tid = setTimeout(() => {
+        if (!showerOn) return;
+        setTubStage(i + 1);
+        if (tubDialogues[i]) {
+          setBubbleText(tubDialogues[i]);
+          showBubble2();
+        }
+      }, delay);
+      tubTimers.push(tid);
+    });
+
+    // 洗衣液动画循环
+    detergentStream.addEventListener('animationend', function handler() {
+      if (!showerOn) return;
+      detergentStream.classList.remove('flow');
+      void detergentStream.offsetWidth;
+      detergentStream.classList.add('flow');
+      detergentStream.style.setProperty('--stream-h', (stage2.getBoundingClientRect().height * (0.35 + Math.random() * 0.15)) + 'px');
+    });
+  }
+
+  function stopShower() {
+    showerOn = false;
+    showerArea.classList.remove('active');
+    showerHint.style.opacity = '1';
+    detergentBottle.classList.remove('pour');
+
+    if (waterInterval) { clearInterval(waterInterval); waterInterval = null; }
+    if (bubbleInterval) { clearInterval(bubbleInterval); bubbleInterval = null; }
+
+    // 清除6张图的所有定时器
+    tubTimers.forEach(tid => clearTimeout(tid));
+    tubTimers = [];
+
+    // 清除水流
+    detergentStream.classList.remove('flow');
+
+    // 保持花洒停止时的状态，不重置
+    setBubbleText('洗好啦~ 变干净了呢！');
+    showBubble2();
+  }
+
+  function setBubbleText(text) {
+    const textEl = bubble2.querySelector('.bubble-text');
+    if (textEl) textEl.textContent = text;
+  }
+
+  function spawnWaterDrops() {
+    if (!showerOn) return;
+    const stageRect = stage2.getBoundingClientRect();
+    const showerRect = showerArea.getBoundingClientRect();
+
+    // 花洒出水位置 (相对 stage, 花洒在顶部中央)
+    const originX = showerRect.left + showerRect.width * 0.5 - stageRect.left;
+    const originY = showerRect.top + showerRect.height * 0.7 - stageRect.top;
+
+    // 一次产生4-8滴乳白色液滴 (撒花效果)
+    const count = 4 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < count; i++) {
+      const drop = document.createElement('div');
+      drop.className = 'water-drop';
+      // 撒花散布: 从花洒向四周散开
+      const spreadX = (Math.random() - 0.5) * 60;
+      drop.style.left = (originX + spreadX) + 'px';
+      drop.style.top = originY + 'px';
+      const size = 6 + Math.random() * 12;
+      drop.style.width = size + 'px';
+      drop.style.height = size + 'px';
+      drop.style.setProperty('--fall-dist', (stageRect.height * 0.55 + Math.random() * 40) + 'px');
+      drop.style.setProperty('--drift', ((Math.random() - 0.5) * 80) + 'px');
+      drop.style.setProperty('--fall-duration', (1.0 + Math.random() * 0.8) + 's');
+      drop.style.setProperty('--fall-delay', (Math.random() * 0.15) + 's');
+      waterContainer.appendChild(drop);
+      requestAnimationFrame(() => drop.classList.add('fall'));
+      setTimeout(() => drop.remove(), 1800);
+    }
+  }
+
+  function spawnBubbles() {
+    if (!showerOn) return;
+    const stageRect = stage2.getBoundingClientRect();
+
+    // 泡泡从浴缸区域浮起 (下方中间)
+    const originX = stageRect.width * (0.35 + Math.random() * 0.3);
+    const originY = stageRect.height * (0.5 + Math.random() * 0.15);
+
+    const count = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble-particle';
+      const size = 6 + Math.random() * 18;
+      bubble.style.width = size + 'px';
+      bubble.style.height = size + 'px';
+      bubble.style.left = (originX + (Math.random() - 0.5) * 70) + 'px';
+      bubble.style.top = (originY + (Math.random() - 0.3) * 30) + 'px';
+      bubble.style.setProperty('--bubble-rise', (-80 - Math.random() * 100) + 'px');
+      bubble.style.setProperty('--bubble-drift', ((Math.random() - 0.5) * 40) + 'px');
+      bubble.style.setProperty('--bubble-dur', (1.5 + Math.random() * 2) + 's');
+      bubble.style.setProperty('--bubble-delay', (Math.random() * 0.3) + 's');
+      bubbleContainer.appendChild(bubble);
+      requestAnimationFrame(() => bubble.classList.add('float'));
+      setTimeout(() => bubble.remove(), 3000);
+    }
+  }
+
+  function showBubble2() {
+    if (bubble2Timer) { clearTimeout(bubble2Timer); bubble2Timer = null; }
+    bubble2.classList.add('show');
+    bubble2Timer = setTimeout(() => {
+      bubble2.classList.remove('show');
+      bubble2Timer = null;
+    }, 3500);
+  }
+
+  console.log('🧺 脏衣服互动H5已就绪 | 第一幕: 旋转互动 | 第二幕: 洗衣六幕');
+
+  /* ============================================================
+     场景三: 干净自信 + 花香可视化
+  ============================================================ */
+
+  const stage3         = document.getElementById('stage3');
+  const cleanDisplay   = document.getElementById('cleanDisplay');
+  const glowRing       = document.getElementById('glowRing');
+  const bubble3        = document.getElementById('bubble3');
+  const tapHint        = document.getElementById('tapHint');
+  const flowerContainer = document.getElementById('flowerContainer');
+  const scentWaveContainer = document.getElementById('scentWaveContainer');
+
+  let bubble3Timer = null;
+  let glowVisible = false;
+
+  // 花朵类型配置
+  const flowerTypes = [
+    { petals: 5, color: 'var(--fp-cherry, #F2A5B5)', grad: 'var(--fp-cherry-g, #F9CED8)', center: '#FFF5EE' },
+    { petals: 6, color: 'var(--fp-lav, #C4A5DF)',   grad: 'var(--fp-lav-g, #DDC8F0)',   center: '#FFFAF0' },
+    { petals: 5, color: 'var(--fp-peach, #FFB8A0)', grad: 'var(--fp-peach-g, #FFD4C4)', center: '#FFFEF9' },
+    { petals: 8, color: 'var(--fp-daisy, #FEFEFE)', grad: 'var(--fp-daisy-g, #FFF5F0)', center: '#FFE4B5' },
+    { petals: 7, color: 'var(--fp-rose, #F2B5C5)', grad: 'var(--fp-rose-g, #F9D0DA)',   center: '#FFF0F5' },
+  ];
+
+  function createFlower(container, cx, cy) {
+    const type = flowerTypes[Math.floor(Math.random() * flowerTypes.length)];
+    const flower = document.createElement('div');
+    flower.className = 'flower-particle';
+
+    // 随机微调大小
+    const scale = 0.7 + Math.random() * 0.5;
+    const size = Math.round(42 * scale);
+    flower.style.width  = size + 'px';
+    flower.style.height = size + 'px';
+    flower.style.left = (cx - size/2) + 'px';
+    flower.style.top  = (cy - size/2) + 'px';
+
+    // 花瓣
+    const petalW = Math.round(6 * scale);
+    const petalH = Math.round(14 * scale);
+    const halfW = Math.round(petalW / 2);
+    for (let i = 0; i < type.petals; i++) {
+      const petal = document.createElement('div');
+      petal.className = 'petal';
+      const angle = (360 / type.petals) * i;
+      petal.style.width = petalW + 'px';
+      petal.style.height = petalH + 'px';
+      petal.style.marginLeft = -halfW + 'px';
+      petal.style.marginTop = -petalH + 'px';
+      petal.style.transformOrigin = halfW + 'px ' + petalH + 'px';
+      petal.style.transform = 'rotate(' + angle + 'deg)';
+      petal.style.background = 'radial-gradient(ellipse at 35% 25%, ' + type.color + ', ' + type.grad + ' 85%)';
+      petal.style.opacity = (0.75 + Math.random() * 0.2);
+      flower.appendChild(petal);
+    }
+
+    // 花蕊
+    const center = document.createElement('div');
+    center.className = 'center-dot';
+    const dotSize = Math.round(7 * scale);
+    center.style.width  = dotSize + 'px';
+    center.style.height = dotSize + 'px';
+    center.style.marginLeft = Math.round(-dotSize/2) + 'px';
+    center.style.marginTop  = Math.round(-dotSize/2) + 'px';
+    center.style.background = 'radial-gradient(circle at 40% 40%, ' + type.center + ', ' + type.color + ' 80%)';
+    flower.appendChild(center);
+
+    container.appendChild(flower);
+    return flower;
+  }
+
+  // 场景进入时显示光环和对话
+  function initScene3() {
+    // 光环渐显
+    setTimeout(() => {
+      glowRing.classList.add('visible');
+      glowVisible = true;
+    }, 300);
+
+    // 初始对话
+    setTimeout(() => {
+      showBubble3('变得干干净净，自信又开心！');
+    }, 800);
+
+    // 第二轮对话
+    setTimeout(() => {
+      showBubble3('洗衣液就用超能植愈！');
+    }, 4500);
+  }
+
+  function showBubble3(text) {
+    if (bubble3Timer) { clearTimeout(bubble3Timer); bubble3Timer = null; }
+    const textEl = bubble3.querySelector('.bubble-text');
+    if (textEl) textEl.textContent = text;
+    bubble3.classList.add('show');
+    bubble3Timer = setTimeout(() => {
+      bubble3.classList.remove('show');
+      bubble3Timer = null;
+    }, 3500);
+  }
+
+  // 点击衣服触发花香可视化
+  cleanDisplay.addEventListener('click', triggerFlowerBloom);
+  cleanDisplay.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    triggerFlowerBloom();
+  });
+
+  function triggerFlowerBloom() {
+    const stageRect = stage3.getBoundingClientRect();
+    const displayRect = cleanDisplay.getBoundingClientRect();
+
+    // 衣服中心点 (相对stage)
+    const cx = displayRect.left + displayRect.width / 2 - stageRect.left;
+    const cy = displayRect.top + displayRect.height / 2 - stageRect.top;
+
+    // 香气波纹 (3-4圈)
+    const waveCount = 4;
+    for (let i = 0; i < waveCount; i++) {
+      const wave = document.createElement('div');
+      wave.className = 'scent-wave';
+      wave.style.setProperty('--sw-delay', (i * 0.15) + 's');
+      scentWaveContainer.appendChild(wave);
+      requestAnimationFrame(() => wave.classList.add('pulse'));
+      setTimeout(() => wave.remove(), 1800);
+    }
+
+    // 优雅CSS花朵向外散发 (12-16朵)
+    const flowerCount = 12 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < flowerCount; i++) {
+      const angle = (Math.PI * 2 * i) / flowerCount + (Math.random() - 0.5) * 0.25;
+      const distance = 50 + Math.random() * 120;
+      const fx = Math.cos(angle) * distance;
+      const fy = Math.sin(angle) * distance;
+      const fr = (Math.random() - 0.5) * 420;
+
+      const flower = createFlower(flowerContainer, cx, cy);
+      flower.style.setProperty('--fx', fx + 'px');
+      flower.style.setProperty('--fy', fy + 'px');
+      flower.style.setProperty('--fr', fr + 'deg');
+      flower.style.setProperty('--bloom-dur', (1.6 + Math.random() * 1.4) + 's');
+      flower.style.setProperty('--bloom-delay', (Math.random() * 0.3) + 's');
+
+      requestAnimationFrame(() => flower.classList.add('bloom'));
+      setTimeout(() => flower.remove(), 2800);
+    }
+
+    // 对话反馈
+    const messages = [
+      '洗衣液就用超能植愈！',
+      '香香的~ 好好闻！',
+      '花朵绽放，自信满满~',
+      '干干净净，心情好好！',
+    ];
+    showBubble3(messages[Math.floor(Math.random() * messages.length)]);
+
+    // 隐藏点击提示
+    tapHint.style.opacity = '0';
+    setTimeout(() => { tapHint.style.opacity = ''; }, 2500);
+  }
+
+  // 监听滚动进入场景三时初始化
+  const scene3Observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !glowVisible) {
+        initScene3();
+      }
+    });
+  }, { threshold: 0.5 });
+
+  scene3Observer.observe(document.getElementById('scene3'));
+
+  // 兜底：如果IntersectionObserver未触发，延迟初始化
+  setTimeout(() => {
+    if (!glowVisible) initScene3();
+  }, 2000);
+
+  console.log('🌸 第三幕: 干净自信 + 花香可视化已就绪');
+})();
+</script>
+
+</body>
+</html>
