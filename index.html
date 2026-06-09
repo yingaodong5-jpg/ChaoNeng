@@ -986,6 +986,14 @@
     const noL = charCX - noW / 2, noT = charCY - noH / 2;
     const noR = noL + noW, noB = noT + noH;
 
+    // 顶部主气泡禁区（避免出现在 "我身上脏脏的怎么办？" 下方）
+    // 主气泡在 top:8%，高度约 60px，宽度约 220px，水平居中
+    const topBubH = stageH * 0.08 + 70; // 气泡底部留出 70px 余量
+    const topNoL = stageW * 0.5 - 120;
+    const topNoR = stageW * 0.5 + 120;
+    const topNoT = 0;
+    const topNoB = topBubH;
+
     // 收集已占用矩形
     const occupied = spawnedReplies.map(el => ({
       l: parseFloat(el.style.left),
@@ -999,8 +1007,10 @@
     }
 
     function isInNoZone(l, t) {
-      // 判断气泡矩形是否与禁区重叠
-      return rectsOverlap(l, t, l + BW, t + BH, noL, noT, noR, noB, 0);
+      // 判断气泡矩形是否与禁区重叠（衣服中心区 或 顶部主气泡区）
+      const inChar = rectsOverlap(l, t, l + BW, t + BH, noL, noT, noR, noB, 0);
+      const inTopBub = rectsOverlap(l, t, l + BW, t + BH, topNoL, topNoT, topNoR, topNoB, 0);
+      return inChar || inTopBub;
     }
 
     function collidesAny(l, t, gap) {
