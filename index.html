@@ -945,6 +945,7 @@
   const spawnedReplies = [];
   let replyShowTimer = null;
   let replyIndex = 0; // 顺序计数器
+  let autoScrollFired = false; // 防止重复触发自动滚动
 
   function showBubble1() {
     if (bubble1Timer) { clearTimeout(bubble1Timer); bubble1Timer = null; }
@@ -1025,6 +1026,14 @@
     // 按顺序递增
     replyIndex++;
 
+    // 5次点击后自动滚动到第二幕
+    if (replyIndex >= 5 && !autoScrollFired) {
+      autoScrollFired = true;
+      setTimeout(() => {
+        scene2.scrollIntoView({ behavior: 'smooth' });
+      }, 800);
+    }
+
     // 创建新气泡 DOM
     const el = document.createElement('div');
     el.className = 'reply-bubble';
@@ -1086,6 +1095,7 @@
   ============================================================ */
 
   const stage2            = document.getElementById('stage2');
+  const scene2             = document.getElementById('scene2');
   const showerArea        = document.getElementById('showerArea');
   const showerHint        = document.getElementById('showerHint');
   const detergentBottle   = document.getElementById('detergentBottle');
