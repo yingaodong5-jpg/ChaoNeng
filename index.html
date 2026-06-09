@@ -976,8 +976,8 @@
     const stageW = stageRect.width;
     const stageH = stageRect.height;
 
-    // 气泡实际尺寸估算：约 "🌿 用超能植愈洗衣液！" 文字宽度
-    const BW = 148, BH = 36;
+    // 气泡实际尺寸估算：按最长文案"5重香氛专利，720h持久留香！"估算
+    const BW = 210, BH = 36;
     const PAD = 4; // 气泡间最小间距
 
     // 衣服中心禁区（stage 中间区域，避免遮住角色）
@@ -1070,6 +1070,16 @@
       };
     }
 
+    // 随机文案列表
+    const replyTexts = [
+      '🌿 用超能植愈洗衣液！',
+      '🌸 5重香氛专利，720h持久留香！',
+      '🇫🇷 法国调香师专属定制香',
+      '✨ 天然净护因子，强力去污渍',
+      '🍃 祛味又留香，换季也不怕',
+    ];
+    const randomText = replyTexts[Math.floor(Math.random() * replyTexts.length)];
+
     // 创建新气泡 DOM
     const el = document.createElement('div');
     el.className = 'reply-bubble';
@@ -1077,7 +1087,7 @@
     el.style.top  = bestPos.t + 'px';
     el.innerHTML = `
       <div class="reply-bubble-inner">
-        <span class="reply-bubble-text">🌿 用超能植愈洗衣液！</span>
+        <span class="reply-bubble-text">${randomText}</span>
       </div>
       <div class="reply-bubble-arrow"></div>
     `;
