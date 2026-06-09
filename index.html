@@ -224,14 +224,10 @@
     object-fit: contain;
     pointer-events: none;
     z-index: 1;
-    opacity: 0;
+    visibility: hidden;
   }
   .bathtub-layer.visible {
-    opacity: 1;
-  }
-  .bathtub-layer.initial {
-    opacity: 1;
-    z-index: 2;
+    visibility: visible;
   }
 
   /* === 开心星星粒子 === */
@@ -1129,8 +1125,10 @@
 
   function setTubStage(index) {
     currentTubIndex = index;
+    // 先显示新图，再隐藏旧图，杜绝两图之间的空白瞬间
+    tubLayers[index].classList.add('visible');
     tubLayers.forEach((layer, i) => {
-      layer.classList.toggle('visible', i === index);
+      if (i !== index) layer.classList.remove('visible');
     });
     if (index === 5) {
       spawnSparkles();
