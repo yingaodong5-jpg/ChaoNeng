@@ -705,10 +705,6 @@
     </div>
     <div class="shower-hint" id="showerHint">点我打开花洒</div>
 
-    <!-- 洗衣液瓶 -->
-    <div class="detergent-bottle" id="detergentBottle">🧴</div>
-    <div class="detergent-stream" id="detergentStream"></div>
-
     <!-- 水流粒子容器 -->
     <div id="waterContainer"></div>
 
@@ -1119,8 +1115,6 @@
   const scene2             = document.getElementById('scene2');
   const showerArea        = document.getElementById('showerArea');
   const showerHint        = document.getElementById('showerHint');
-  const detergentBottle   = document.getElementById('detergentBottle');
-  const detergentStream   = document.getElementById('detergentStream');
   const waterContainer    = document.getElementById('waterContainer');
   const bubbleContainer   = document.getElementById('bubbleContainer');
   const bubble2           = document.getElementById('bubble2');
@@ -1195,15 +1189,6 @@
     tubTimers.forEach(tid => clearTimeout(tid));
     tubTimers = [];
 
-    // 洗衣液瓶倾斜
-    detergentBottle.classList.add('pour');
-
-    // 洗衣液液体
-    detergentStream.classList.add('flow');
-    const stageRect = stage2.getBoundingClientRect();
-    const streamH = stageRect.height * 0.4;
-    detergentStream.style.setProperty('--stream-h', streamH + 'px');
-
     // 水流粒子
     waterInterval = setInterval(spawnWaterDrops, 80);
 
@@ -1230,21 +1215,12 @@
       tubTimers.push(tid);
     });
 
-    // 洗衣液动画循环
-    detergentStream.addEventListener('animationend', function handler() {
-      if (!showerOn) return;
-      detergentStream.classList.remove('flow');
-      void detergentStream.offsetWidth;
-      detergentStream.classList.add('flow');
-      detergentStream.style.setProperty('--stream-h', (stage2.getBoundingClientRect().height * (0.35 + Math.random() * 0.15)) + 'px');
-    });
   }
 
   function stopShower() {
     showerOn = false;
     showerArea.classList.remove('active');
     showerHint.style.opacity = '1';
-    detergentBottle.classList.remove('pour');
 
     if (waterInterval) { clearInterval(waterInterval); waterInterval = null; }
     if (bubbleInterval) { clearInterval(bubbleInterval); bubbleInterval = null; }
@@ -1252,9 +1228,6 @@
     // 清除6张图的所有定时器
     tubTimers.forEach(tid => clearTimeout(tid));
     tubTimers = [];
-
-    // 清除水流
-    detergentStream.classList.remove('flow');
 
     // 保持花洒停止时的状态，不重置
     setBubbleText('洗好啦~ 变干净了呢！');
