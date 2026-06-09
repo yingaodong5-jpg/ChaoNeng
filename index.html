@@ -254,17 +254,17 @@
   .flower-right {
     right: 0;
   }
-  /* 花朵位置分布 */
-  .flower-l1 { left: 0; bottom: 0; }
-  .flower-l2 { left: 8%; bottom: 6%; }
-  .flower-l3 { left: 3%; bottom: -2%; }
-  .flower-l4 { left: 16%; bottom: 10%; }
-  .flower-l5 { left: 10%; bottom: -5%; }
-  .flower-r1 { right: 0; bottom: 0; }
-  .flower-r2 { right: 6%; bottom: 5%; }
-  .flower-r3 { right: 2%; bottom: -1%; }
-  .flower-r4 { right: 14%; bottom: 9%; }
-  .flower-r5 { right: 8%; bottom: -4%; }
+  /* 花朵大小分散 - 营造前后层次 */
+  .flower-l1 { left: 0; bottom: 5%; height: 42%; }
+  .flower-l2 { left: 22%; bottom: 18%; height: 34%; }
+  .flower-l3 { left: 5%; bottom: 2%; height: 38%; }
+  .flower-l4 { left: 35%; bottom: 25%; height: 26%; }
+  .flower-l5 { left: 15%; bottom: 0%; height: 30%; }
+  .flower-r1 { right: 0; bottom: 5%; height: 42%; }
+  .flower-r2 { right: 20%; bottom: 16%; height: 34%; }
+  .flower-r3 { right: 5%; bottom: 2%; height: 38%; }
+  .flower-r4 { right: 34%; bottom: 23%; height: 26%; }
+  .flower-r5 { right: 12%; bottom: 0%; height: 30%; }
 
   /* === 开心星星粒子 === */
   .sparkle {
@@ -299,15 +299,15 @@
   }
   /* 花洒图标 */
   .shower-icon {
-    width: 44px;
-    height: 44px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     background: rgba(255,250,245,0.3);
     border: 2px dashed rgba(180,170,155,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 32px;
     animation: showerPulse 2s ease-in-out infinite;
     transition: all 0.3s ease;
   }
@@ -421,19 +421,48 @@
     pointer-events: none;
     z-index: 4;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), rgba(245,238,228,0.3) 60%, rgba(225,215,200,0.12));
-    border: 1px solid rgba(220,210,195,0.35);
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(200,230,255,0.45) 50%, rgba(170,210,255,0.15));
+    border: 1.5px solid rgba(160,200,255,0.5);
+    box-shadow: inset 0 -3px 6px rgba(200,220,255,0.35), 0 0 8px rgba(180,215,255,0.3);
     opacity: 0;
   }
   .bubble-particle.float {
-    animation: bubbleFloat var(--bubble-dur, 2.5s) ease-out forwards;
+    animation: bubbleFloat var(--bubble-dur, 3.5s) ease-out forwards;
     animation-delay: var(--bubble-delay, 0s);
   }
   @keyframes bubbleFloat {
-    0%   { opacity: 0; transform: translate(0, 0) scale(0.3); }
-    20%  { opacity: 0.9; }
-    60%  { opacity: 0.6; }
-    100% { opacity: 0; transform: translate(var(--bubble-drift, -20px), var(--bubble-rise, -120px)) scale(1.4); }
+    0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+    10%  { opacity: 1; transform: translate(0, 0) scale(1); }
+    70%  { opacity: 0.9; }
+    100% { opacity: 0.9; transform: translate(var(--bubble-drift, -20px), var(--bubble-rise, -160px)) scale(1); }
+  }
+  /* 泡泡爆裂动画 */
+  .bubble-particle.pop {
+    animation: bubblePop 0.35s ease-out forwards !important;
+  }
+  @keyframes bubblePop {
+    0%   { opacity: 0.9; transform: translate(var(--bubble-drift, -20px), var(--bubble-rise, -160px)) scale(1); }
+    30%  { opacity: 1; transform: translate(var(--bubble-drift, -20px), var(--bubble-rise, -160px)) scale(1.25); }
+    100% { opacity: 0; transform: translate(var(--bubble-drift, -20px), var(--bubble-rise, -160px)) scale(1.6); border-width: 0; }
+  }
+  /* 泡泡爆裂文字 */
+  .bubble-text-pop {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5BA0E0;
+    text-shadow: 0 1px 3px rgba(91,160,224,0.3);
+    white-space: nowrap;
+    opacity: 0;
+    animation: bubbleTextPop 1.6s ease-out forwards;
+  }
+  @keyframes bubbleTextPop {
+    0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+    15%  { opacity: 1; transform: translateY(-8px) scale(1); }
+    70%  { opacity: 0.9; transform: translateY(-20px) scale(1); }
+    100% { opacity: 0; transform: translateY(-35px) scale(0.9); }
   }
 
   /* === 场景二对话框 === */
@@ -495,6 +524,10 @@
 
   .scene3 .stage {
     overflow: hidden;
+    background: transparent;
+  }
+  .scene3 {
+    background: transparent !important;
   }
 
   /* 干净衣服展示容器 */
@@ -512,12 +545,13 @@
   }
 
   .clean-char-img {
-    width: 80%;
-    height: 80%;
+    width: 60%;
+    height: 60%;
     display: block;
     object-fit: contain;
     pointer-events: none;
     animation: cleanBreathe 3s ease-in-out infinite;
+    margin-top: 0%;
   }
 
   @keyframes cleanBreathe {
@@ -634,10 +668,42 @@
     translate: -50% 0;
   }
 
+  /* 购买按钮 */
+  .buy-btn {
+    position: absolute;
+    bottom: 0%;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 22;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 28px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #5C8A3C, #7AB65A);
+    color: #fff;
+    font-size: clamp(13px, 3.5vw, 16px);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(92,138,60,0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: buyBtnPulse 2.5s ease-in-out infinite;
+  }
+  .buy-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(92,138,60,0.3);
+  }
+  @keyframes buyBtnPulse {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    50%      { transform: translate(-50%, 0) scale(1.05); }
+  }
+
   /* === 顶部大标题 === */
   .scene3-top-banner {
     position: absolute;
-    top: 6%;
+    top: 2%;
     left: 50%;
     translate: -50% 0;
     z-index: 20;
@@ -773,7 +839,7 @@
 
     <!-- 干净自信的衣服 -->
     <div class="clean-display" id="cleanDisplay">
-      <img class="clean-char-img" id="imgHappy" src="images/happy.png" alt="干净自信" draggable="false" loading="lazy" decoding="async" width="600" height="600" onerror="this.style.display='none'">
+      <img class="clean-char-img" id="imgHappy" src="白净已扣图.png" alt="干净自信" draggable="false" loading="lazy" decoding="async" width="600" height="600" onerror="this.style.display='none'">
     </div>
 
     <!-- 点击提示 -->
@@ -788,10 +854,13 @@
     <!-- 对话框 -->
     <div class="bubble bubble3" id="bubble3">
       <div class="bubble-inner">
-        <span class="bubble-text">变得干干净净，自信又开心！浑身散发着花香~ 🌸</span>
+        <span class="bubble-text">法国白鸢木檀香超治愈✨</span>
       </div>
       <div class="bubble-arrow"></div>
     </div>
+
+    <!-- 购买链接按钮 -->
+    <a class="buy-btn" id="buyBtn" href="https://e.tb.cn/h.RPVYBp62LtShLU1?tk=19L2g2T2lPY" target="_blank" rel="noopener noreferrer">🛒 立即购买</a>
   </div>
 </div>
 
@@ -1247,7 +1316,7 @@
     waterInterval = setInterval(spawnWaterDrops, 80);
 
     // 泡泡
-    bubbleInterval = setInterval(spawnBubbles, 300);
+    bubbleInterval = setInterval(spawnBubbles, 700);
 
     // 初始对话
     setBubbleText('暖暖的好舒服呀~');
@@ -1264,6 +1333,12 @@
         if (tubDialogues[i]) {
           setBubbleText(tubDialogues[i]);
           showBubble2();
+        }
+        // 最后一张图F显示后，停留5秒自动跳转第三幕
+        if (i === tubDelays.length - 1) {
+          setTimeout(() => {
+            document.getElementById('scene3').scrollIntoView({ behavior: 'smooth' });
+          }, 5000);
         }
       }, delay);
       tubTimers.push(tid);
@@ -1304,10 +1379,9 @@
     tubTimers.forEach(tid => clearTimeout(tid));
     tubTimers = [];
 
-    // 清除花朵定时器，重置花朵状态
+    // 清除花朵定时器，但保留已生长的花朵不消失
     flowerTimers.forEach(tid => clearTimeout(tid));
     flowerTimers = [];
-    allFlowers.forEach(f => f.classList.remove('grow'));
 
     // 保持花洒停止时的状态，不重置
     setBubbleText('洗好啦~ 变干净了呢！');
@@ -1350,30 +1424,66 @@
     }
   }
 
+  // 泡泡爆裂随机文字
+  const bubbleTexts = [
+    '要变白白香香的小衣服！',
+    '洗完还能香香好久好久～',
+    '终于不用脏乎乎啦',
+    '是大自然的干净味道呀',
+    '洗香香就不会被嫌弃啦'
+  ];
+
   function spawnBubbles() {
     if (!showerOn) return;
     const stageRect = stage2.getBoundingClientRect();
 
-    // 泡泡从浴缸区域浮起 (下方中间)
-    const originX = stageRect.width * (0.35 + Math.random() * 0.3);
-    const originY = stageRect.height * (0.5 + Math.random() * 0.15);
+    // 泡泡从浴缸区域生成
+    const originX = stageRect.width * (0.3 + Math.random() * 0.4);
+    const originY = stageRect.height * (0.45 + Math.random() * 0.2);
 
-    const count = 2 + Math.floor(Math.random() * 3);
+    const count = 1 + Math.floor(Math.random() * 3);
     for (let i = 0; i < count; i++) {
       const bubble = document.createElement('div');
       bubble.className = 'bubble-particle';
-      const size = 6 + Math.random() * 18;
+      const size = 18 + Math.random() * 34;
       bubble.style.width = size + 'px';
       bubble.style.height = size + 'px';
-      bubble.style.left = (originX + (Math.random() - 0.5) * 70) + 'px';
-      bubble.style.top = (originY + (Math.random() - 0.3) * 30) + 'px';
-      bubble.style.setProperty('--bubble-rise', (-80 - Math.random() * 100) + 'px');
-      bubble.style.setProperty('--bubble-drift', ((Math.random() - 0.5) * 40) + 'px');
-      bubble.style.setProperty('--bubble-dur', (1.5 + Math.random() * 2) + 's');
+      // 从浴缸附近开始
+      bubble.style.left = (originX + (Math.random() - 0.5) * 60) + 'px';
+      bubble.style.top = (originY + (Math.random() - 0.5) * 30) + 'px';
+      // 上升距离加大，横向漂移加大，让泡泡能飘到左上/右上角落
+      bubble.style.setProperty('--bubble-rise', (-50 - Math.random() * 300) + 'px');
+      bubble.style.setProperty('--bubble-drift', ((Math.random() - 0.5) * 260) + 'px');
+      const dur = 2.5 + Math.random() * 2.5;
+      bubble.style.setProperty('--bubble-dur', dur + 's');
       bubble.style.setProperty('--bubble-delay', (Math.random() * 0.3) + 's');
       bubbleContainer.appendChild(bubble);
       requestAnimationFrame(() => bubble.classList.add('float'));
-      setTimeout(() => bubble.remove(), 3000);
+      // 漂浮结束后爆裂 + 弹出文字
+      const popDelay = (dur + Math.random() * 0.3) * 1000;
+      setTimeout(() => {
+        if (bubble.parentNode) {
+          // 记录泡泡最终位置
+          const rect = bubble.getBoundingClientRect();
+          const sRect = stage2.getBoundingClientRect();
+          const finalX = rect.left - sRect.left + rect.width / 2;
+          const finalY = rect.top - sRect.top;
+          bubble.classList.remove('float');
+          bubble.classList.add('pop');
+          // 随机弹出文字
+          if (Math.random() < 0.5) {
+            const textEl = document.createElement('div');
+            textEl.className = 'bubble-text-pop';
+            textEl.textContent = bubbleTexts[Math.floor(Math.random() * bubbleTexts.length)];
+            textEl.style.left = finalX + 'px';
+            textEl.style.top = finalY + 'px';
+            textEl.style.transform = 'translateX(-50%)';
+            stage2.appendChild(textEl);
+            setTimeout(() => textEl.remove(), 1700);
+          }
+          setTimeout(() => bubble.remove(), 400);
+        }
+      }, popDelay);
     }
   }
 
@@ -1484,14 +1594,26 @@
       glowVisible = true;
     }, 300);
 
-    // 初始对话
+    // 第三幕随机文案
+    const scene3Texts = [
+      '法国白鸢木檀香超治愈✨',
+      '摩擦就生香，走路带香气',
+      '阿玛尼同款调香师出品',
+      '沉浸式植物疗愈香氛体验',
+      '开盖就香，洗完香30天'
+    ];
+    let scene3TextIdx = 0;
+
+    // 初始对话 - 随机文案
     setTimeout(() => {
-      showBubble3('变得干干净净，自信又开心！');
+      scene3TextIdx = Math.floor(Math.random() * scene3Texts.length);
+      showBubble3(scene3Texts[scene3TextIdx]);
     }, 800);
 
-    // 第二轮对话
-    setTimeout(() => {
-      showBubble3('洗衣液就用超能植愈！');
+    // 循环展示随机文案
+    setInterval(() => {
+      scene3TextIdx = (scene3TextIdx + 1) % scene3Texts.length;
+      showBubble3(scene3Texts[scene3TextIdx]);
     }, 4500);
   }
 
