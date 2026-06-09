@@ -230,6 +230,31 @@
     visibility: visible;
   }
 
+  /* === 浴缸后生长的花朵 === */
+  .flower {
+    position: absolute;
+    bottom: 0;
+    z-index: 0;
+    opacity: 0;
+    transform-origin: bottom center;
+    transform: scale(0);
+    pointer-events: none;
+    will-change: transform, opacity;
+    height: 45%;
+    width: auto;
+  }
+  .flower.grow {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.5s ease, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .flower-left {
+    left: 0;
+  }
+  .flower-right {
+    right: 0;
+  }
+
   /* === 开心星星粒子 === */
   .sparkle {
     position: absolute;
@@ -689,6 +714,10 @@
     <img class="bathtub-layer" id="tubE" src="images/E.png" alt="洗衣E" draggable="false" loading="lazy" decoding="async" width="600" height="924" onerror="this.style.display='none'">
     <img class="bathtub-layer" id="tubF" src="images/F.png" alt="干净衣服F" draggable="false" loading="lazy" decoding="async" width="600" height="921" onerror="this.style.display='none'">
 
+    <!-- 浴缸后生长的花朵 -->
+    <img class="flower flower-left" id="flowerNarcissus" src="images/水仙1.png" alt="水仙花" draggable="false" loading="lazy" decoding="async" width="229" height="500" onerror="this.style.display='none'">
+    <img class="flower flower-right" id="flowerIris" src="images/鸢尾1.png" alt="鸢尾花" draggable="false" loading="lazy" decoding="async" width="354" height="500" onerror="this.style.display='none'">
+
     <!-- 花洒可点击区域 -->
     <div class="shower-area" id="showerArea">
       <div class="shower-icon">🚿</div>
@@ -1115,12 +1144,15 @@
   const tubE = document.getElementById('tubE');
   const tubF = document.getElementById('tubF');
   const tubLayers = [tubA, tubB, tubC, tubD, tubE, tubF];
+  const flowerNarcissus = document.getElementById('flowerNarcissus');
+  const flowerIris      = document.getElementById('flowerIris');
 
   let showerOn = false;
   let waterInterval = null;
   let bubbleInterval = null;
   let bubble2Timer = null;
   let tubTimers = [];       // 6张图的所有定时器
+  let flowerTimers = [];    // 花朵生长定时器
   let currentTubIndex = 0;  // 0-5 对应 01-06
 
   function setTubStage(index) {
@@ -1207,6 +1239,19 @@
       tubTimers.push(tid);
     });
 
+    // 花朵依次生长（浴缸后面）
+    const flowerDelays = [
+      { el: flowerNarcissus, delay: 3000 },
+      { el: flowerIris,      delay: 5000 }
+    ];
+    flowerDelays.forEach(({ el, delay }) => {
+      const tid = setTimeout(() => {
+        if (!showerOn) return;
+        el.classList.add('grow');
+      }, delay);
+      flowerTimers.push(tid);
+    });
+
   }
 
   function stopShower() {
@@ -1220,6 +1265,12 @@
     // 清除6张图的所有定时器
     tubTimers.forEach(tid => clearTimeout(tid));
     tubTimers = [];
+
+    // 清除花朵定时器，重置花朵状态
+    flowerTimers.forEach(tid => clearTimeout(tid));
+    flowerTimers = [];
+    flowerNarcissus.classList.remove('grow');
+    flowerIris.classList.remove('grow');
 
     // 保持花洒停止时的状态，不重置
     setBubbleText('洗好啦~ 变干净了呢！');
