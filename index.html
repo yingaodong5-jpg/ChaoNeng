@@ -421,29 +421,29 @@
   /* === 向下滚动提示箭头 === */
   .scroll-hint {
     position: absolute;
-    bottom: 12px;
+    bottom: 20px;
     left: 50%;
     translate: -50% 0;
     z-index: 30;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    opacity: 0.5;
+    gap: 4px;
+    opacity: 0.7;
     animation: scrollHintBounce 2s ease-in-out infinite;
     pointer-events: none;
   }
   .scroll-hint span {
     display: block;
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid #C0C0C0;
-    border-bottom: 2px solid #C0C0C0;
+    width: 16px;
+    height: 16px;
+    border-right: 3px solid #C0C0C0;
+    border-bottom: 3px solid #C0C0C0;
     transform: rotate(45deg);
   }
   @keyframes scrollHintBounce {
-    0%, 100% { transform: translate(-50%, 0); opacity: 0.3; }
-    50%      { transform: translate(-50%, 6px); opacity: 0.7; }
+    0%, 100% { transform: translate(-50%, 0); opacity: 0.5; }
+    50%      { transform: translate(-50%, 10px); opacity: 1; }
   }
 
   /* === 场景过渡遮罩 === */
@@ -947,6 +947,26 @@
   let replyIndex = 0; // 顺序计数器
   let autoScrollFired = false; // 防止重复触发自动滚动
 
+  // 慢速平滑滚动（duration ms）
+  function smoothScrollTo(targetEl, duration) {
+    const targetTop = targetEl.offsetTop;
+    const startTop = window.scrollY;
+    const diff = targetTop - startTop;
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      // easeInOutCubic
+      const ease = t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      window.scrollTo(0, startTop + diff * ease);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   function showBubble1() {
     if (bubble1Timer) { clearTimeout(bubble1Timer); bubble1Timer = null; }
     if (replyShowTimer) { clearTimeout(replyShowTimer); replyShowTimer = null; }
@@ -1026,11 +1046,11 @@
     // 按顺序递增
     replyIndex++;
 
-    // 5次点击后自动滚动到第二幕
+    // 5次点击后自动滚动到第二幕（慢速）
     if (replyIndex >= 5 && !autoScrollFired) {
       autoScrollFired = true;
       setTimeout(() => {
-        scene2.scrollIntoView({ behavior: 'smooth' });
+        smoothScrollTo(scene2, 1500);
       }, 800);
     }
 
