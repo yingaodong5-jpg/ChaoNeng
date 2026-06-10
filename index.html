@@ -824,12 +824,12 @@
 <div class="scene scene2" id="scene2">
   <div class="stage" id="stage2">
     <!-- 洗衣六幕画布: A→B→C→D→E→F -->
-    <img class="bathtub-layer visible" id="tubA" src="images/A.webp" alt="脏衣服A" draggable="false" loading="eager" decoding="async" width="400" height="621" onerror="this.style.display='none'">
-    <img class="bathtub-layer" id="tubB" src="images/B.webp" alt="洗衣B" draggable="false" loading="lazy" decoding="async" width="400" height="619" onerror="this.style.display='none'">
-    <img class="bathtub-layer" id="tubC" src="images/C.webp" alt="洗衣C" draggable="false" loading="lazy" decoding="async" width="400" height="618" onerror="this.style.display='none'">
-    <img class="bathtub-layer" id="tubD" src="images/D.webp" alt="洗衣D" draggable="false" loading="lazy" decoding="async" width="400" height="615" onerror="this.style.display='none'">
-    <img class="bathtub-layer" id="tubE" src="images/E.webp" alt="洗衣E" draggable="false" loading="lazy" decoding="async" width="400" height="616" onerror="this.style.display='none'">
-    <img class="bathtub-layer" id="tubF" src="images/F.webp" alt="干净衣服F" draggable="false" loading="lazy" decoding="async" width="400" height="614" onerror="this.style.display='none'">
+    <img class="bathtub-layer visible" id="tubA" src="images/A.webp" alt="脏衣服A" draggable="false" loading="eager" decoding="async" width="400" height="621">
+    <img class="bathtub-layer" id="tubB" src="images/B.webp" alt="洗衣B" draggable="false" loading="eager" decoding="async" width="400" height="619">
+    <img class="bathtub-layer" id="tubC" src="images/C.webp" alt="洗衣C" draggable="false" loading="eager" decoding="async" width="400" height="618">
+    <img class="bathtub-layer" id="tubD" src="images/D.webp" alt="洗衣D" draggable="false" loading="eager" decoding="async" width="400" height="615">
+    <img class="bathtub-layer" id="tubE" src="images/E.webp" alt="洗衣E" draggable="false" loading="eager" decoding="async" width="400" height="616">
+    <img class="bathtub-layer" id="tubF" src="images/F.webp" alt="干净衣服F" draggable="false" loading="eager" decoding="async" width="400" height="614">
 
     <!-- 浴缸后生长的花朵 -->
     <img class="flower flower-l1" id="flowerNarcissus" src="images/narcissus.webp" alt="水仙花" draggable="false" loading="eager" decoding="async" width="229" height="500">
@@ -1285,6 +1285,12 @@
   const allFlowers = [flowerNarcissus, flowerIris, flowerBaiLan1, flowerBaiLan2,
                       flowerMeigui1, flowerMeigui2, flowerWanXiangYu1,
                       flowerWanXiangYu2, flowerWanXiangYu3, flowerYuanWei2];
+
+  // 预加载 A-F 图片到浏览器缓存，避免第一遍切换闪烁
+  ['A','B','C','D','E','F'].forEach(name => {
+    const img = new Image();
+    img.src = 'images/' + name + '.webp';
+  });
 
   let showerOn = false;
   let waterInterval = null;
