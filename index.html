@@ -1126,10 +1126,16 @@
     // 情绪粒子
     spawnEmotionParticles(stage1, imgs[currentView]);
 
-    // 0.5秒后新增一个永久回应气泡
-    replyShowTimer = setTimeout(() => {
-      spawnPersistentReply();
-    }, 500);
+    // 依次弹出5个词条（点击一次全部自动弹出）
+    if (!autoScrollFired) {
+      const delay = 500; // 第一个词条0.5s后出现
+      const interval = 600; // 每个词条间隔600ms
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          spawnPersistentReply();
+        }, delay + interval * i);
+      }
+    }
 
     // 主气泡3秒后消失
     bubble1Timer = setTimeout(() => {
