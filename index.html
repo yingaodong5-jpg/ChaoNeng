@@ -296,27 +296,61 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: visible;
   }
   /* 花洒图标 */
   .shower-icon {
-    width: 64px;
-    height: 64px;
+    position: relative;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: rgba(255,250,245,0.3);
-    border: 2px dashed rgba(180,170,155,0.4);
+    background: linear-gradient(135deg, rgba(180,225,255,0.55), rgba(220,245,255,0.4));
+    border: 2.5px solid rgba(100,185,255,0.55);
+    box-shadow: 0 0 14px rgba(100,200,255,0.35), inset 0 1px 4px rgba(255,255,255,0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 34px;
     animation: showerPulse 2s ease-in-out infinite;
     transition: all 0.3s ease;
+    flex-shrink: 0;
+  }
+  /* 常态外圈光晕 */
+  .shower-icon::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(100,185,255,0.28);
+    animation: showerRing 2s ease-in-out infinite;
   }
   .shower-area.active .shower-icon {
-    background: rgba(255,250,245,0.55);
-    border-color: rgba(200,190,175,0.6);
-    box-shadow: 0 0 20px rgba(255,250,240,0.5);
+    background: linear-gradient(135deg, rgba(120,200,255,0.7), rgba(180,235,255,0.6));
+    border-color: rgba(60,170,255,0.8);
+    box-shadow: 0 0 28px rgba(80,190,255,0.6), inset 0 1px 6px rgba(255,255,255,0.6);
     animation: showerSpin 0.6s linear infinite;
   }
+  .shower-area.active .shower-icon::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* 水波纹圈 */
+  .shower-ripple {
+    position: absolute;
+    border-radius: 50%;
+    border: 2.5px solid rgba(80, 190, 255, 0.75);
+    pointer-events: none;
+    transform: scale(0.3);
+    opacity: 1;
+    animation: rippleExpand 0.7s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+    z-index: 11;
+  }
+  @keyframes rippleExpand {
+    0%   { transform: scale(0.3); opacity: 0.85; }
+    100% { transform: scale(2.8); opacity: 0; }
+  }
+
   /* 提示文字 */
   .shower-hint {
     position: absolute;
@@ -326,10 +360,12 @@
     width: 18%;
     text-align: center;
     font-size: 11px;
-    color: #B8A898;
+    color: #7ABFE0;
     pointer-events: none;
     z-index: 10;
     transition: opacity 0.4s ease;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.8);
   }
   .shower-area.active + .shower-hint,
   .shower-area.active ~ .shower-hint {
@@ -337,13 +373,17 @@
   }
 
   @keyframes showerPulse {
-    0%, 100% { transform: scale(1); }
-    50%      { transform: scale(1.08); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 14px rgba(100,200,255,0.35), inset 0 1px 4px rgba(255,255,255,0.5); }
+    50%      { transform: scale(1.1);  box-shadow: 0 0 26px rgba(100,200,255,0.6), inset 0 1px 4px rgba(255,255,255,0.5); }
+  }
+  @keyframes showerRing {
+    0%, 100% { transform: scale(1);    opacity: 0.5; }
+    50%      { transform: scale(1.15); opacity: 0.15; }
   }
   @keyframes showerSpin {
-    0%   { transform: rotate(0deg) scale(1.05); }
-    50%  { transform: rotate(10deg) scale(1.05); }
-    100% { transform: rotate(0deg) scale(1.05); }
+    0%   { transform: rotate(0deg) scale(1.08); }
+    50%  { transform: rotate(12deg) scale(1.08); }
+    100% { transform: rotate(0deg) scale(1.08); }
   }
 
   /* === 乳白色洗衣液水滴 (撒花效果) === */
@@ -1288,10 +1328,30 @@
     });
   }
 
+  // 生成水波纹
+  function spawnRipple(e) {
+    const icon = showerArea.querySelector('.shower-icon');
+    // 连续点 3 圈，错开延迟
+    [0, 130, 260].forEach(delay => {
+      setTimeout(() => {
+        const r = document.createElement('div');
+        r.className = 'shower-ripple';
+        // 以图标中心为圆心，尺寸和图标一致
+        r.style.cssText = `width:72px;height:72px;left:50%;top:50%;margin-left:-36px;margin-top:-36px;`;
+        showerArea.appendChild(r);
+        r.addEventListener('animationend', () => r.remove());
+      }, delay);
+    });
+  }
+
   // 花洒点击 / 触摸
-  showerArea.addEventListener('click', toggleShower);
+  showerArea.addEventListener('click', function(e) {
+    spawnRipple(e);
+    toggleShower();
+  });
   showerArea.addEventListener('touchend', function(e) {
     e.preventDefault();
+    spawnRipple(e);
     toggleShower();
   });
 
